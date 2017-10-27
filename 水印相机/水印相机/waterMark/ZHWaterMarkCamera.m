@@ -626,25 +626,30 @@
     AVCaptureFlashMode tempflashMode = AVCaptureFlashModeOff;
     //拿到当前设备的闪光状态
     AVCaptureFlashMode xxflshMode = kSystemVersion >10.0 ? self.photoSettings.flashMode : device.flashMode;
+    NSString *imageNamed = @"camera_light_n";
     switch (xxflshMode) {
         case AVCaptureFlashModeOff: {//关闭->自动
             tempflashMode = AVCaptureFlashModeAuto;
             self.flashLabel.text = @"自动";
+            imageNamed = @"camera_light_n";
             break;
         }
         case AVCaptureFlashModeOn: {//开->关闭
             tempflashMode = AVCaptureFlashModeOff;
             self.flashLabel.text = @"关闭";
+            imageNamed = @"camera_light_c";
             break;
         }
         case AVCaptureFlashModeAuto: {//自动->打开
             tempflashMode = AVCaptureFlashModeOn;
             self.flashLabel.text = @"打开";
+            imageNamed = @"camera_light_o";
             break;
         }
         default:
             break;
     }
+     [self.flashButton setImage:[UIImage imageNamed:imageNamed] forState:UIControlStateNormal];
     if (kSystemVersion < 10.0) {
         //修改前必须先锁定
         [device lockForConfiguration:nil];
