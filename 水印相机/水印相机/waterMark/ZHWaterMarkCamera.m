@@ -707,27 +707,7 @@
         [photoOutput capturePhotoWithSettings:newSettings delegate:self];
     }
 }
-//处理图片
--(void)dealWithImage:(UIImage *)image{
-    //前置摄像头拍照会旋转180解决办法
-    if (self.deviceInput.device.position == AVCaptureDevicePositionFront) {
-      UIImageOrientation imgOrientation = UIImageOrientationLeftMirrored;
-       image = [[UIImage alloc]initWithCGImage:image.CGImage scale:1.0f orientation:imgOrientation];
-    }
-    //重新画一张图片(将时间/个人信息/地址信息画上去)
-    self.image = [self drawMarkImage:image];
-    //停止流
-    [self.captureSession stopRunning];
-    //展示图片view
-    //防止重复添加
-    if (self.imageView) {
-        [self.imageView removeFromSuperview];
-    }
-    self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
-    [self.view insertSubview:_imageView belowSubview:_topBlackView];
-    self.imageView.layer.masksToBounds = YES;
-    self.imageView.image = image;
-}
+
 //根据当前手机方向拿到摄像头拍摄方向
 - (AVCaptureVideoOrientation)avOrientationForDeviceOrientation:(UIDeviceOrientation)deviceOrientation{
     AVCaptureVideoOrientation result = (AVCaptureVideoOrientation)deviceOrientation;
@@ -813,27 +793,37 @@
     }
 }
 //缩放手势 用于调整焦距(设置图层的缩放比例)
+/*
+ 原理:
+ 手势添加到了self.view上,当两个手指开始缩放时只是把self.view缩放了,self.previewLayer图层也跟着缩放,而此时相机捕获的图片数据,仍然是没有缩放前的,因此拿到缩放比例给连接(AVCaptureConnection)设置,一点击拍照就会根据所设置的连接获取缩放后的图片数据
+ **/
 - (void)handlePinchGesture:(UIPinchGestureRecognizer *)recognizer{
-    
+    /*******该段代码用于判断触摸点是否超过图层有效区域*********/
     BOOL allTouchesAreOnThePreviewLayer = YES;
     //拿到触摸点(几根手指)
     NSUInteger numTouches = [recognizer numberOfTouches];
     for (int i = 0; i < numTouches; ++i) {
-        //拿到每个触摸点的位置
+        //拿到每个触摸点在view上面的位置
         CGPoint location = [recognizer locationOfTouch:i inView:self.view];
+        //转化成在self.previewLayer上面的位置
         CGPoint convertedLocation = [self.previewLayer convertPoint:location fromLayer:self.previewLayer.superlayer];
+        //判断这个触摸点是否在self.previewLayer图层上面,在上面才会缩放
         if ( ! [self.previewLayer containsPoint:convertedLocation] ) {
             allTouchesAreOnThePreviewLayer = NO;
             break;
         }
     }
+    /*******在有效区域内*********/
     if (allTouchesAreOnThePreviewLayer) {
-        //设置缩放比例
+        //根据手势缩放比例拿到新的缩放比例
         self.effectiveScale = self.beginGestureScale * recognizer.scale;
+        //缩小最小为1.0
         if (self.effectiveScale < 1.0){
             self.effectiveScale = 1.0;
         }
+        //拿到相机支持的最大缩放比例
         CGFloat maxScaleAndCropFactor = [[self.captureOutput connectionWithMediaType:AVMediaTypeVideo] videoMaxScaleAndCropFactor];
+        //设置最大缩放比例
         if (self.effectiveScale > maxScaleAndCropFactor)
             self.effectiveScale = maxScaleAndCropFactor;
         //添加缩放动画到图层上
@@ -854,7 +844,7 @@
     return YES;
 }
 #pragma mark - AVCapturePhotoCaptureDelegate
-//用于监视照片的拍摄过程
+//用于监视照片的拍摄过程,实时获取到拍照的图层数据
 -(void)captureOutput:(AVCapturePhotoOutput *)captureOutput didFinishProcessingPhotoSampleBuffer:(CMSampleBufferRef)photoSampleBuffer previewPhotoSampleBuffer:(CMSampleBufferRef)previewPhotoSampleBuffer resolvedSettings:(AVCaptureResolvedPhotoSettings *)resolvedSettings bracketSettings:(AVCaptureBracketedStillImageSettings *)bracketSettings error:(NSError *)error{
     if (error) {
         NSLog(@"error : %@", error.localizedDescription);
@@ -868,6 +858,27 @@
 }
 
 #pragma mark - 画图层
+//处理图片
+-(void)dealWithImage:(UIImage *)image{
+    //前置摄像头拍照会旋转180解决办法
+    if (self.deviceInput.device.position == AVCaptureDevicePositionFront) {
+        UIImageOrientation imgOrientation = UIImageOrientationLeftMirrored;
+        image = [[UIImage alloc]initWithCGImage:image.CGImage scale:1.0f orientation:imgOrientation];
+    }
+    //重新画一张图片(将时间/个人信息/地址信息画上去)
+    self.image = [self drawMarkImage:image];
+    //停止流
+    [self.captureSession stopRunning];
+    //展示图片view
+    //防止重复添加
+    if (self.imageView) {
+        [self.imageView removeFromSuperview];
+    }
+    self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
+    [self.view insertSubview:_imageView belowSubview:_topBlackView];
+    self.imageView.layer.masksToBounds = YES;
+    self.imageView.image = image;
+}
 /**
  *  绘制带水印的图片
  */
