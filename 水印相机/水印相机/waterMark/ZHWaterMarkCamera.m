@@ -22,7 +22,6 @@
 /*
  概念:
  捕获设备，通常是前置摄像头，后置摄像头，麦克风（音频输入）
- AVCaptureDevice表示一种物理设备，它提供实时输入媒体数据，如视频和音频。
  一个AVCaptureDevice实例,代表一种设备
  创建方式:
  AVCaptureDevice实例不能被直接创建,因为设备本身已经存在了,我们是要拿到他而已
@@ -57,7 +56,7 @@
  }
  return nil;
  }
- 作用:提供媒体数据到会话(AVCaptureDevice)中,通过这个设备(AVCaptureDevice)创建一个(AVCaptureDeviceInput)捕捉设备输入器,再添加到那个捕捉会话中
+ 作用:提供媒体数据到会话(AVCaptureSession)中,通过这个设备(AVCaptureDevice)创建一个(AVCaptureDeviceInput)捕捉设备输入器,再添加到那个捕捉会话中
  */
 @property(nonatomic)AVCaptureDevice *device;
 /**
